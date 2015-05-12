@@ -56,6 +56,12 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
 
 
+
+
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.InstructionsBuilder;
+import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+
 /**
  * Simple Learning Switch implementation which does mac learning for one switch.
  *
@@ -230,8 +236,13 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
 
             }
             else if(Arrays.equals(ETH_TYPE_LLDP,etherType)){
+                
+                 /**
+                 * Created by Lucía Peñaranda Pardo
+                 */
+                
                 //Handle LLDP packet
-                System.out.println("LLDP arrived");//Jenny
+                System.out.println("LLDP arrived");
                 System.out.println("\n");
                 System.out.println("NOTIFICATION LLDP: " + notification.toString());
                 System.out.println("\n");
@@ -269,29 +280,10 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
                 json.add(event_dpid);
                 json.add(event_port);
                 
-                /*
-                 * Inicial mio
-                
-                JSONObject json = new JSONObject(); 
-               
-                json.put("originatorDPID", Integer.parseInt(originatorDPID));
-                json.put("originatorPort",Integer.parseInt(originatorPort));
-                json.put("event_dpid",Integer.parseInt(event_dpid));
-                json.put("event_port",Integer.parseInt(event_port));
-                
-                List<String> p = new ArrayList<String>();//Jenny
-                p.add("\"link\"");//Jenny
-                p.add(json.toString());//Jenny
-                
-                System.out.println("onPacketReceived -> MI JSON LLDP" + p + "\n");                
-                this.channel.push(p.toString() + "\n");
-                
-                */
-                
                 System.out.println("onPacketReceived -> MI JSON LLDP" + json + "\n");                
                 this.channel.push(json.toString() + "\n");
                 
-                mac2portMapping.put(srcMac, notification.getIngress());//Jenny
+                mac2portMapping.put(srcMac, notification.getIngress());
             }
             else {
                 LOG.debug("Unknown packet arrived.\nThis shouldn't be happening");
@@ -315,14 +307,15 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
                 .child(NodeConnector.class, new NodeConnectorKey(new NodeConnectorId(nodeConnectorKey)))
                 .build();
     }
-    //
+ 
 
     @Override
     public void sendToSwitch(JSONArray json) {
         String type = json.get(0).toString();
+        final DataBroker dataProviderService = null;
 
         if (type.equals("packet")) {
-        	System.out.println("packet packet----------");
+            System.out.println("packet packet----------");
             System.out.println(json.toString());
             JSONObject packet = (JSONObject)json.get(1);
             Integer swtch = ((Long) packet.get("switch")).intValue();
@@ -405,6 +398,32 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
             }
             else
                 System.out.println("Not transmitting");
+        }
+        
+        else if (type.equals("flow_stats_request")){
+             /**
+             * Created by Lucía Peñaranda Pardo
+             */
+            
+            System.out.println("sendToSwitch -> FLOW_STATS_REQUEST \n");
+            System.out.println("Este es mi FLOW_STATS_REQUEST" + json.toString());
+            System.out.println("\n");
+            
+            Integer inNodeKey = ((Long)json.get(1)).intValue();
+            String dpid = inNodeKey.toString();
+            
+            InstructionsBuilder req = new InstructionsBuilder();
+            req = StatsUtils.createMeterInstructions();
+            
+            //ReadWriteTransaction transaction = this.dataBroker.newReadWriteTransaction();
+            ReadOnlyTransaction readOnlyTransaction = dataProviderService.newReadOnlyTransaction();
+            
+            /*      transaction.put(LogicalDatastoreType.CONFIGURATIONInstanceIdentifierUtils.createFlowPath(this.tablePath, new FlowKey(flow.getId())),
+                     flow, true);
+             transaction.submit();
+             System.out.println("Flow sent to switch");
+       */       
+            
         }
 
         else {
