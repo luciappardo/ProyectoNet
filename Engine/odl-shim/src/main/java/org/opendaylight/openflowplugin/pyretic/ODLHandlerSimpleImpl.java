@@ -174,7 +174,13 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
         String [] msg = null;
         String switch_s = null;
         String inport = null;
-
+        
+        int originatorDPID = 0;
+        int originatorPort = 0;
+        int event_dpid = 0;
+        int event_port = 0; 
+        NodeConnectorRef originator = null;
+        String [] originatorMsg = null;
 
         if(path.contains(":")) {
             msg = path.split(":");
@@ -204,7 +210,7 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
                 mac2portMapping.put(srcMac, notification.getIngress());
             }
             else if (Arrays.equals(ETH_TYPE_IPV6, etherType)) {
-		        System.out.println("IPV6 arrived - not handling ipv6");
+                System.out.println("IPV6 arrived - not handling ipv6");
                 mac2portMapping.put(srcMac, notification.getIngress());
             }
             else if (Arrays.equals(ETH_TYPE_ARP, etherType)) {
@@ -225,12 +231,67 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
             }
             else if(Arrays.equals(ETH_TYPE_LLDP,etherType)){
                 //Handle LLDP packet
-                System.out.println("LLDP arrived");
-                //List<String> p = new ArrayList<String>();
-                //p.add("\"link\"");
-                //p.add()
+                System.out.println("LLDP arrived");//Jenny
+                System.out.println("\n");
+                System.out.println("NOTIFICATION LLDP: " + notification.toString());
+                System.out.println("\n");
+                
+                event_port = Integer.parseInt(inport);
+                event_dpid = Integer.parseInt(switch_s);
+                            
+                originator = LLDPDiscoveryUtils.lldpToNodeConnectorRef(notification.getPayload());
+                System.out.println("Originator es: " + originator.toString() + "\n");
+                NodeConnectorKey originatorKey = InstanceIdentifierUtils.getNodeConnectorKey(originator.getValue());
+                String originatorPath  = originatorKey.getId().getValue();
+                if(originatorPath.contains(":")) {
+                    originatorMsg = originatorPath.split(":");
+                    originatorDPID = Integer.parseInt(originatorMsg[1]);
+                    originatorPort = Integer.parseInt(originatorMsg[2]);
+                }
+                
+               /*
+                Ejemplo Internet:
+                 
+                JSONArray list = new JSONArray();
+                list.add("foo");
+                list.add(new Integer(100));
+                list.add(new Double(1000.21));
+                list.add(new Boolean(true));
+                list.add(null);
+                System.out.print(list);
 
-                mac2portMapping.put(srcMac, notification.getIngress());
+                  Result: ["foo",100,1000.21,true,null] */
+                
+                JSONArray json = new JSONArray();
+                json.add("link");
+                json.add(originatorDPID);
+                json.add(originatorPort);
+                json.add(event_dpid);
+                json.add(event_port);
+                
+                /*
+                 * Inicial mio
+                
+                JSONObject json = new JSONObject(); 
+               
+                json.put("originatorDPID", Integer.parseInt(originatorDPID));
+                json.put("originatorPort",Integer.parseInt(originatorPort));
+                json.put("event_dpid",Integer.parseInt(event_dpid));
+                json.put("event_port",Integer.parseInt(event_port));
+                
+                List<String> p = new ArrayList<String>();//Jenny
+                p.add("\"link\"");//Jenny
+                p.add(json.toString());//Jenny
+                
+                System.out.println("onPacketReceived -> MI JSON LLDP" + p + "\n");                
+                this.channel.push(p.toString() + "\n");
+                
+                */
+                
+                System.out.println("onPacketReceived -> MI JSON LLDP" + json + "\n");                
+                this.channel.push(json.toString() + "\n");
+                
+                mac2portMapping.put(srcMac, notification.getIngress());//Jenny
             }
             else {
                 LOG.debug("Unknown packet arrived.\nThis shouldn't be happening");
