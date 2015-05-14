@@ -91,6 +91,15 @@
           <artifactId>liblldp</artifactId>
           <version>0.8.1-SNAPSHOT</version>
         </dependency>
+        
+<!--Nuevas dependencias -->
+   
+   	<dependency>
+		<groupId>org.opendaylight.controller.model</groupId>
+		<artifactId>model-flow-statistics</artifactId>
+	</dependency>     
+   
+   
     </dependencies>
 </project>
 
