@@ -76,7 +76,7 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
     private static final byte[] ETH_TYPE_IPV6 = new byte[] {(byte) 0x86, (byte) 0xdd};
     private static final byte[] ETH_TYPE_LLDP = new byte[] {(byte) 0x88, (byte) 0xcc};
     private static final byte[] ETH_TYPE_ARP  = new byte[] {(byte) 0x08, (byte) 0x06};
-
+    private static int flow_stats = 0;
 
     private static final int DIRECT_FLOW_PRIORITY = 512;
 
@@ -236,15 +236,13 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
 
             }
             else if(Arrays.equals(ETH_TYPE_LLDP,etherType)){
-                
-                 /**
-                 * Created by Lucía Peñaranda Pardo
-                 */
-                
+            	
+            	 /**
+            	 * Created by Lucía Peñaranda Pardo
+            	 */
+            	
                 //Handle LLDP packet
                 System.out.println("LLDP arrived");
-                System.out.println("\n");
-                System.out.println("NOTIFICATION LLDP: " + notification.toString());
                 System.out.println("\n");
                 
                 event_port = Integer.parseInt(inport);
@@ -285,6 +283,13 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
                 
                 mac2portMapping.put(srcMac, notification.getIngress());
             }
+            if(flow_stats == 1){
+            	flow_stats = 0;
+            	System.out.println("OnPacketReceived -> FLOW_STATS arrived \n");
+                System.out.println("NOTIFICATION: " + notification.toString() + "\n");
+                
+            	mac2portMapping.put(srcMac, notification.getIngress());
+            }
             else {
                 LOG.debug("Unknown packet arrived.\nThis shouldn't be happening");
             }
@@ -315,8 +320,7 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
         final DataBroker dataProviderService = null;
 
         if (type.equals("packet")) {
-            System.out.println("packet packet----------");
-            System.out.println(json.toString());
+        	
             JSONObject packet = (JSONObject)json.get(1);
             Integer swtch = ((Long) packet.get("switch")).intValue();
             Integer inport = ((Long) packet.get("inport")).intValue();
@@ -352,8 +356,9 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
         }
 
         else if (type.equals("install")) {
-            System.out.println("install packet----------");
-            System.out.println(json.toString());
+        	
+            //System.out.println("install packet----------");
+            //System.out.println(json.toString());
             JSONObject match = (JSONObject) json.get(1);
             int priority = Integer.parseInt(json.get(2).toString());
             JSONArray actions = (JSONArray)json.get(3);
@@ -401,29 +406,22 @@ public class ODLHandlerSimpleImpl implements ODLHandler, PacketProcessingListene
         }
         
         else if (type.equals("flow_stats_request")){
-             /**
-             * Created by Lucía Peñaranda Pardo
-             */
-            
-            System.out.println("sendToSwitch -> FLOW_STATS_REQUEST \n");
+        	 /**
+        	 * Created by Lucía Peñaranda Pardo
+        	 */
+        	
+        	System.out.println("sendToSwitch -> FLOW_STATS_REQUEST \n");
             System.out.println("Este es mi FLOW_STATS_REQUEST" + json.toString());
             System.out.println("\n");
             
-            Integer inNodeKey = ((Long)json.get(1)).intValue();
-            String dpid = inNodeKey.toString();
-            
-            InstructionsBuilder req = new InstructionsBuilder();
-            req = StatsUtils.createMeterInstructions();
-            
-            //ReadWriteTransaction transaction = this.dataBroker.newReadWriteTransaction();
-            ReadOnlyTransaction readOnlyTransaction = dataProviderService.newReadOnlyTransaction();
-            
-            /*      transaction.put(LogicalDatastoreType.CONFIGURATIONInstanceIdentifierUtils.createFlowPath(this.tablePath, new FlowKey(flow.getId())),
-                     flow, true);
-             transaction.submit();
-             System.out.println("Flow sent to switch");
-       */       
-            
+        	Integer inNodeKey = ((Long)json.get(1)).intValue();
+        	String dpid = inNodeKey.toString();
+        	flow_stats = 1;
+        	StatsUtils._flowStats();
+        	//InstructionsBuilder req = new InstructionsBuilder();
+        	//req = StatsUtils.createMeterInstructions();
+        	System.out.println("sendToSwitch -> End flow_stats_request");
+        	
         }
 
         else {
